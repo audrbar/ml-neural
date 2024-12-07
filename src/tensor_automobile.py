@@ -1,9 +1,12 @@
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.optimizers import Adam, SGD, RMSprop, Adagrad
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, confusion_matrix
 
@@ -22,6 +25,7 @@ def categorize_age(age):
         return 4  # Senior
 
 
+# Define a function to categorize experience
 def categorize_experience(experience):
     if experience < 1:
         return 0  # very low
@@ -35,6 +39,25 @@ def categorize_experience(experience):
         return 4  # very high
     else:
         return 5  # exceptional
+
+
+# Function to dynamically create optimizer with learning rate schedule
+def get_optimizer(optimizer_name, initial_lr=0.01, decay_steps=100, decay_rate=0.96):
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=initial_lr,
+        decay_steps=decay_steps,
+        decay_rate=decay_rate
+    )
+    if optimizer_name == 'adam':
+        return Adam(learning_rate=lr_schedule)
+    elif optimizer_name == 'sgd':
+        return SGD(learning_rate=lr_schedule)
+    elif optimizer_name == 'rmsprop':
+        return RMSprop(learning_rate=lr_schedule)
+    elif optimizer_name == 'adagrad':
+        return Adagrad(learning_rate=lr_schedule)
+    else:
+        raise ValueError(f"Unsupported optimizer: {optimizer_name}")
 
 
 # Load Data
@@ -59,58 +82,131 @@ X_hist = df.drop(columns=['Segmentation'])
 df['Age'] = df['Age'].apply(categorize_age)
 df['WorkExperience'] = df['WorkExperience'].apply(categorize_experience)
 
-# Prepare Data for Clustering
+# Data Preparation
 X = df.drop(columns=['Segmentation']).values  # Features
 y = df['Segmentation'].values  # True labels for evaluation
-
-print(X)
-print(y)
 
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
-# [0, 0, 1], [0, 1, 0], [1, 0, 0]
-encoder = OneHotEncoder(sparse_output=False)
-y_onehot = encoder.fit_transform(y.reshape(-1, 1))
-
-X_train_val, X_test, y_train_val, y_test = train_test_split(X, y_onehot, test_size=0.2, random_state=42)
+X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2, random_state=42)
 
-model = Sequential([
-    Input(shape=(X_train.shape[1],)),
-    Dense(64, activation='relu'),
-    Dense(32, activation='relu'),
-    Dense(y_train.shape[1], activation='sigmoid')
-])
 
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+# Function to build, compile, and train the model
+def train_model(optimizer_name, initial_lr=0.01, decay_steps=10, decay_rate=0.96, batch_size=16, epochs=100):
+    # Model Definition
+    model = Sequential([
+        Input(shape=(X_train.shape[1],)),
+        Dense(64, activation='relu'),
+        Dense(32, activation='relu'),
+        Dense(len(np.unique(y)), activation='softmax')
+    ])
 
-history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=40, batch_size=32, verbose=1)
+    optimiser = get_optimizer(optimizer_name, initial_lr, decay_steps, decay_rate)
 
-y_pred_probs = model.predict(X_test)
-y_pred = np.argmax(y_pred_probs, axis=1)
-y_test_labels = np.argmax(y_test, axis=1)
+    # Compile Model
+    model.compile(optimizer=optimiser, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-acc = accuracy_score(y_test_labels, y_pred)
-print(f'Accuracy:, {acc:.4f}')
+    early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
-cm = confusion_matrix(y_test_labels, y_pred)
-print('Confusion Matrix:\n', cm)
+    # Model Training
+    history = model.fit(
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        epochs=epochs,
+        batch_size=batch_size,
+        verbose=1,
+        callbacks=[early_stopping]
+    )
 
-plt.figure(figsize=(14, 6))
-plt.subplot(1, 2, 1)
-plt.plot(history.history['loss'], label='Training loss')
-plt.plot(history.history['val_loss'], label='Validation loss')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.title('Loss during training')
-plt.legend()
+    # Predictions and Evaluation
+    y_pred_probs = model.predict(X_test)
+    y_pred = np.argmax(y_pred_probs, axis=1)
 
-plt.subplot(1, 2, 2)
-plt.plot(history.history['accuracy'], label='Training accuracy')
-plt.plot(history.history['val_accuracy'], label='Validation accuracy')
-plt.xlabel('Epochs')
+    acc = accuracy_score(y_test, y_pred)
+    print(f'Accuracy with initial_lr={initial_lr}, decay_steps={decay_steps}, decay_rate={decay_rate}: {acc:.4f}')
+
+    cm = confusion_matrix(y_test, y_pred)
+    print('Confusion Matrix:\n', cm)
+
+    steps_per_epoch = X_train.shape[0] / 16
+    print('Steps per Epoch: ', steps_per_epoch)
+
+    # Store metrics
+    metrics = {
+        'optimizer': optimizer_name,
+        'initial_lr': initial_lr,
+        'decay_steps': decay_steps,
+        'decay_rate': decay_rate,
+        'accuracy': acc,
+        'validation_loss': history.history['val_loss'][-1]
+    }
+
+    # Visualization
+    plt.figure(figsize=(15, 7))
+
+    # Loss Plot
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['loss'], label='Training loss')
+    plt.plot(history.history['val_loss'], label='Validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title(f'Loss during Training ({optimizer_name})')
+    plt.legend()
+    plt.grid()
+
+    # Accuracy Plot
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['accuracy'], label='Training accuracy')
+    plt.plot(history.history['val_accuracy'], label='Validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.title(f'Accuracy during Training ({optimizer_name})')
+    plt.legend()
+    plt.grid()
+
+    plt.tight_layout()
+    plt.show()
+
+    return metrics
+
+
+# Initialize an empty list, train models with different configurations and store metrics
+all_metrics = [
+    train_model(optimizer_name='adam', initial_lr=0.01, decay_steps=100, decay_rate=0.96),
+    train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=100, decay_rate=0.96),
+    train_model(optimizer_name='sgd', initial_lr=0.01, decay_steps=50, decay_rate=0.9),
+    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=50, decay_rate=0.9),
+    train_model(optimizer_name='rmsprop', initial_lr=0.01, decay_steps=200, decay_rate=0.95),
+    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
+    train_model(optimizer_name='adagrad', initial_lr=0.01, decay_steps=200, decay_rate=0.95),
+    train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
+]
+
+# Convert metrics to a DataFrame for tabular display and analysis
+metrics_df = pd.DataFrame(all_metrics)
+
+# Display the table
+print("\nModel Configurations and Results:")
+print(metrics_df)
+
+# Find the best configuration based on validation loss
+best_model = min(all_metrics, key=lambda x: x['validation_loss'])
+
+print("\nBest Model Configuration:")
+for key, value in best_model.items():
+    if isinstance(value, float):
+        print(f"{key}: {value:.4f}")
+    else:
+        print(f"{key}: {value}")
+
+# Plot performance metrics
+plt.figure(figsize=(15, 7))
+plt.bar(metrics_df['optimizer'], metrics_df['accuracy'], label='Accuracy', alpha=0.6)
+plt.xlabel('Optimizer')
 plt.ylabel('Accuracy')
-plt.title('Accuracy during training')
+plt.title('Optimizer Performance Comparison')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.legend()
 plt.show()
