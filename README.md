@@ -52,8 +52,11 @@ These components work together to process input data, propagate information thro
 desired output. The weights and biases are adjusted during the training process through optimization algorithms 
 to minimize the loss function and improve the network's performance.
 ## Choosing Activation Functions
-Hidden Layers: Typically, use ReLU, Leaky ReLU, or Swish.
-Output Layer:
+For Hidden Layers Typically use:
+- ReLU, 
+- Leaky ReLU, 
+- Swish
+For Output Layer:
 - Binary Classification: Sigmoid
 - Multi-Class Classification: Softmax
 - Regression: Linear
