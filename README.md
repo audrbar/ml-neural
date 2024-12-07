@@ -58,6 +58,6 @@ Output Layer:
 - Multi-Class Classification: Softmax
 - Regression: Linear
 ## Resources
-[Deep learning](https://www.functionize.com/blog/neural-network-architectures-and-generative-models-part1)
-[Activation Functions in Neural Networks](https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6)
+[Deep learning](https://www.functionize.com/blog/neural-network-architectures-and-generative-models-part1)\
+[Activation Functions in Neural Networks](https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6)\
 [MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)
