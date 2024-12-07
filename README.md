@@ -55,7 +55,7 @@ to minimize the loss function and improve the network's performance.
 For Hidden Layers Typically use:
 - ReLU, 
 - Leaky ReLU, 
-- Swish
+- Swish.\
 For Output Layer:
 - Binary Classification: Sigmoid
 - Multi-Class Classification: Softmax
