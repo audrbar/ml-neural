@@ -16,7 +16,6 @@ y = data.target
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
-# [0, 0, 1], [0, 1, 0], [1, 0, 0]
 encoder = OneHotEncoder(sparse_output=False)
 y_onehot = encoder.fit_transform(y.reshape(-1, 1))
 

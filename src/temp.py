@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.optimizers import SGD, Adam, RMSprop
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.metrics import accuracy_score, confusion_matrix
@@ -39,11 +39,13 @@ lr_schedule = tf.keras.optimizers.schedules.PolynomialDecay(
     power=1.0
 )
 
+
 # Model training function
 def build_and_train_model(optimizer, optimizer_name, epochs):
     print(f"Training model with {optimizer_name} optimizer")
     model = Sequential([
-        Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+        Input(shape=(X_train.shape[1],)),
+        Dense(64, activation='relu'),
         Dense(32, activation='relu'),
         Dense(1, activation='sigmoid')
     ])
@@ -60,6 +62,7 @@ def build_and_train_model(optimizer, optimizer_name, epochs):
     cm = confusion_matrix(y_test, y_pred)
 
     return history, test_loss, test_acc, optimizer_name, acc_score, cm
+
 
 # List of optimizers with epoch numbers
 optimizers = [
@@ -89,9 +92,10 @@ for optimizer, opt_name, epochs in optimizers:
     print(f"Accuracy Score: {acc_score:.4f}")
     print(f"Confusion Matrix:\n{cm}")
 
+
 # Plotting function
 def plot_metrics(history_dict, test_accuracies):
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=(14, 8))
 
     # Loss plot
     plt.subplot(2, 1, 1)
@@ -120,6 +124,7 @@ def plot_metrics(history_dict, test_accuracies):
     # Show the plots
     plt.tight_layout()
     plt.show()
+
 
 # Plot the graphs
 plot_metrics(history_dict, test_accuracies)
