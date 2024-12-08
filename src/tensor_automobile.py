@@ -106,6 +106,7 @@ def train_model(optimizer_name, initial_lr=0.01, decay_steps=10, decay_rate=0.96
     optimiser = get_optimizer(optimizer_name, initial_lr, decay_steps, decay_rate)
 
     # Compile Model
+    # model.compile(optimizer=optimiser, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     model.compile(optimizer=optimiser, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
@@ -143,44 +144,52 @@ def train_model(optimizer_name, initial_lr=0.01, decay_steps=10, decay_rate=0.96
         'validation_loss': history.history['val_loss'][-1]
     }
 
-    # Visualization
-    plt.figure(figsize=(15, 7))
-
-    # Loss Plot
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['loss'], label='Training loss')
-    plt.plot(history.history['val_loss'], label='Validation loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title(f'Loss during Training ({optimizer_name})')
-    plt.legend()
-    plt.grid()
-
-    # Accuracy Plot
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['accuracy'], label='Training accuracy')
-    plt.plot(history.history['val_accuracy'], label='Validation accuracy')
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.title(f'Accuracy during Training ({optimizer_name})')
-    plt.legend()
-    plt.grid()
-
-    plt.tight_layout()
-    plt.show()
+    # # Visualization
+    # plt.figure(figsize=(15, 7))
+    #
+    # # Loss Plot
+    # plt.subplot(1, 2, 1)
+    # plt.plot(history.history['loss'], label='Training loss')
+    # plt.plot(history.history['val_loss'], label='Validation loss')
+    # plt.xlabel('Epochs')
+    # plt.ylabel('Loss')
+    # plt.title(f'Loss during Training ({optimizer_name})')
+    # plt.legend()
+    # plt.grid()
+    #
+    # # Accuracy Plot
+    # plt.subplot(1, 2, 2)
+    # plt.plot(history.history['accuracy'], label='Training accuracy')
+    # plt.plot(history.history['val_accuracy'], label='Validation accuracy')
+    # plt.xlabel('Epochs')
+    # plt.ylabel('Accuracy')
+    # plt.title(f'Accuracy during Training ({optimizer_name})')
+    # plt.legend()
+    # plt.grid()
+    #
+    # plt.tight_layout()
+    # plt.show()
 
     return metrics
 
 
 # Initialize an empty list, train models with different configurations and store metrics
 all_metrics = [
-    train_model(optimizer_name='adam', initial_lr=0.01, decay_steps=100, decay_rate=0.96),
     train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=100, decay_rate=0.96),
-    train_model(optimizer_name='sgd', initial_lr=0.01, decay_steps=50, decay_rate=0.9),
-    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=50, decay_rate=0.9),
-    train_model(optimizer_name='rmsprop', initial_lr=0.01, decay_steps=200, decay_rate=0.95),
-    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
-    train_model(optimizer_name='adagrad', initial_lr=0.01, decay_steps=200, decay_rate=0.95),
+    train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=100, decay_rate=0.9),
+    train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
+    train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=200, decay_rate=0.9),
+    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=50, decay_rate=0.96),
+    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=100, decay_rate=0.96),
+    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
+    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=200, decay_rate=0.9),
+    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=100, decay_rate=0.95),
+    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=200, decay_rate=0.95),
+    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=300, decay_rate=0.95),
+    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=50, decay_rate=0.96),
+    train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=50, decay_rate=0.95),
+    train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=100, decay_rate=0.95),
+    train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=300, decay_rate=0.95),
     train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
 ]
 
@@ -201,12 +210,40 @@ for key, value in best_model.items():
     else:
         print(f"{key}: {value}")
 
+
 # Plot performance metrics
 plt.figure(figsize=(15, 7))
-plt.bar(metrics_df['optimizer'], metrics_df['accuracy'], label='Accuracy', alpha=0.6)
+plt.bar(metrics_df['optimizer'], metrics_df['accuracy'], label='Accuracy', alpha=0.4)
 plt.xlabel('Optimizer')
 plt.ylabel('Accuracy')
 plt.title('Optimizer Performance Comparison')
+plt.grid(axis='y', linestyle='--', alpha=0.5)
+plt.show()
+
+# Assign colors for each optimizer
+optimizers = metrics_df['optimizer'].unique()
+colors = plt.cm.tab10(range(len(optimizers)))  # Use a colormap to assign colors dynamically
+optimizer_colors = dict(zip(optimizers, colors))
+
+# Plot accuracy and validation loss for each optimizer
+plt.figure(figsize=(15, 7))
+for optimizer in optimizers:
+    subset = metrics_df[metrics_df['optimizer'] == optimizer]
+    color = optimizer_colors[optimizer]
+    plt.plot(subset.index, subset['accuracy'], marker='o', color=color, label=f"{optimizer} - Accuracy")
+    plt.plot(subset.index, subset['validation_loss'], marker='x', color=color, label=f"{optimizer} - Validation Loss")
+
+# Add parameter combinations in the legend
+for idx, row in metrics_df.iterrows():
+    plt.plot([], [], ' ', label=f"{idx}. {row['optimizer']} LR={row['initial_lr']}, DS={row['decay_steps']}, "
+                                f"DR={row['decay_rate']}")
+
+# Customize the plot
+plt.title("Metrics by Optimizer and Parameter Combinations", fontsize=14)
+plt.xlabel("Model Index", fontsize=12)
+plt.ylabel("Metrics", fontsize=12)
+plt.xticks(metrics_df.index, rotation=90, fontsize=10)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.legend()
+plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=9)
+plt.tight_layout()
 plt.show()

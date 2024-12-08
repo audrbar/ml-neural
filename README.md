@@ -50,10 +50,11 @@ These components work together to process input data, propagate information thro
 desired output. The weights and biases are adjusted during the training process through optimization algorithms 
 to minimize the loss function and improve the network's performance.
 ## Loss Functions
+![MSE loss function](./img/1_loss%20functions.png)
 Key Loss Functions are:
 - **Mean Squared Error (MSE) Loss Function** is the sum of squared differences between the entries in the prediction 
 vector y and the ground truth vector y_hat. 
-![MSE loss function](./img/1_loss%20functions.png)
+![MSE loss function](./img/4_loss%20functions_0.png)
 - You divide the sum of squared differences by N, which corresponds to the 
 length of the vectors. If the output y of your neural network is a vector with multiple entries then N is the number 
 of the vector entries with y_i being one particular entry in the output vector. The mean squared error loss function 
@@ -61,16 +62,17 @@ is the perfect loss function if you're dealing with a regression problem. That i
 to predict a continuous scalar value.
 - **Cross-Entropy Loss Function** - a loss function that measure the error between a predicted probability and 
 the label which represents the actual class. The output of a neural network must be in a range between zero and one.
+![MSE loss function](./img/2_loss%20functions.png)
 ![MSE loss function](./img/6_loss%20functions.png)
 The label vector y_hat is one hot encoded which means the values in this vector can only take discrete values of either 
 zero or one. The entries in this vector represent different classes. The values of these entries are zero, except for 
 a single entry which is one. This entry tells us the class into which we want to classify the input feature vector x.
 - **Mean Absolute Percentage Error (MAPE)** function measures the performance of a neural network during demand 
 forecasting tasks - the area of predictive analytics dedicated to predicting the expected demand for a good or service 
-in the near future. For example in retail, we can use demand forecasting models to determine the amount of 
-a particular product that should be available and at what price. It is also known as mean absolute percentage 
-deviation (MAPD).
+in the near future.
 ![Mean Absolute Percentage Error](./img/8_loss%20functions.png)
+For example in retail, we can use demand forecasting models to determine the amount of a particular product that 
+should be available and at what price. It is also known as mean absolute percentage deviation (MAPD).
 ## Choosing Activation Functions
 For Hidden Layers Typically use:
 - ReLU, 
@@ -113,6 +115,7 @@ like AdaDelta, Adam also keeps an exponentially decaying average of past gradien
 [Deep learning](https://www.functionize.com/blog/neural-network-architectures-and-generative-models-part1)\
 [Activation Functions in Neural Networks](https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6)\
 [How Loss Functions Work in Neural Networks](https://builtin.com/machine-learning/loss-functions)\
-[MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)\
+[Multi-layer Perceptron classifier (MLPClassifier)](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)\
+[TensorFlow](https://www.tensorflow.org/api_docs/python/tf)
 [Various Optimization Algorithms For Training Neural Network](https://towardsdatascience.com/optimizers-for-training-neural-network-59450d71caf6)\
 
