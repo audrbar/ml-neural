@@ -1,6 +1,6 @@
 import pandas as pd
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, f1_score
@@ -74,12 +74,12 @@ X_hist = df.drop(columns=['Segmentation'])
 df['Age'] = df['Age'].apply(categorize_age)
 df['WorkExperience'] = df['WorkExperience'].apply(categorize_experience)
 
-# # Final inspection of the preprocessed dataset
-# print("\nCleaned and Preprocessed Dataset Info:")
-# print(df.info())
-# print("\nCleaned Dataset Unique Values for Each Column:")
-# for col in df.columns:
-#     print(f"{col}: {df[col].unique()}")
+# Final inspection of the preprocessed dataset
+print("\nCleaned and Preprocessed Dataset Info:")
+print(df.info())
+print("\nCleaned Dataset Unique Values for Each Column:")
+for col in df.columns:
+    print(f"{col}: {df[col].unique()}")
 
 # Prepare Data for Clustering
 X_pre = df.drop(columns=['Segmentation']).values  # Features
@@ -89,13 +89,16 @@ y_true = df['Segmentation'].values  # True labels for evaluation
 scaler = StandardScaler()
 X = scaler.fit_transform(X_pre)
 
+encoder = OneHotEncoder(sparse_output=False)
+y_onehot = encoder.fit_transform(y_true.reshape(-1, 1))
+
 # # Final preprocessed data for analysis
 # print("\nFinal preprocessed X:")
 # print(X)
 # print("\nFinal preprocessed y_true:")
 # print(y_true)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y_true, test_size=0.1, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y_onehot, test_size=0.1, random_state=42)
 
 # Multi-layer Perceptron classifier
 mlp = MLPClassifier(random_state=42)
@@ -115,7 +118,7 @@ print("Best Cross-Validation Accuracy:", grid_search.best_score_)
 best_mlp = grid_search.best_estimator_
 y_predicted = best_mlp.predict(X_test)
 
-confusion = confusion_matrix(y_test, y_predicted)
+# confusion = confusion_matrix(y_test, y_predicted)
 accuracy = accuracy_score(y_test, y_predicted)
 precision = precision_score(y_test, y_predicted, average='macro')
 recall = recall_score(y_test, y_predicted, average='macro')

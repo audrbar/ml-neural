@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.callbacks import EarlyStopping
@@ -85,29 +85,39 @@ df['WorkExperience'] = df['WorkExperience'].apply(categorize_experience)
 # Data Preparation
 X = df.drop(columns=['Segmentation']).values  # Features
 y = df['Segmentation'].values  # True labels for evaluation
+# scaler = StandardScaler()
+# X = scaler.fit_transform(X)
 
-scaler = StandardScaler()
-X = scaler.fit_transform(X)
 
-X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+encoder = OneHotEncoder(sparse_output=False)
+y_onehot = encoder.fit_transform(y.reshape(-1, 1))
+print('y_onehot: ', y_onehot)
+X_train_val, X_test, y_train_val, y_test = train_test_split(X, y_onehot, test_size=0.2, random_state=42)
 X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.2, random_state=42)
+
+print(X_train.shape)
+print(X_test.shape)
+print(X_val.shape)
+
+print("y shape:", y_onehot.shape)
+print("Unique values in y:", np.unique(y_onehot))
 
 
 # Function to build, compile, and train the model
-def train_model(optimizer_name, initial_lr=0.01, decay_steps=10, decay_rate=0.96, batch_size=16, epochs=100):
+def train_model(optimizer_name, initial_lr=0.001, decay_steps=10, decay_rate=0.96, batch_size=16, epochs=100):
     # Model Definition
     model = Sequential([
         Input(shape=(X_train.shape[1],)),
+        Dense(128, activation='relu'),
         Dense(64, activation='relu'),
-        Dense(32, activation='relu'),
-        Dense(len(np.unique(y)), activation='softmax')
+        Dense(64, activation='relu'),
+        Dense(y_train.shape[1], activation='softmax')
     ])
 
     optimiser = get_optimizer(optimizer_name, initial_lr, decay_steps, decay_rate)
 
     # Compile Model
-    # model.compile(optimizer=optimiser, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    model.compile(optimizer=optimiser, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=optimiser, loss='categorical_crossentropy', metrics=['accuracy'])
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
@@ -124,11 +134,19 @@ def train_model(optimizer_name, initial_lr=0.01, decay_steps=10, decay_rate=0.96
     # Predictions and Evaluation
     y_pred_probs = model.predict(X_test)
     y_pred = np.argmax(y_pred_probs, axis=1)
+    print(y_pred)
 
-    acc = accuracy_score(y_test, y_pred)
+    y_test_ = np.argmax(y_test, axis=1)  # Convert to class indices
+
+    print("y_test shape:", y_test.shape)
+    print("y_test unique values:", np.unique(y_test))
+    print("y_pred shape:", y_pred.shape)
+    print("y_pred unique values:", np.unique(y_pred))
+    print(y_test_)
+    acc = accuracy_score(y_test_, y_pred)
     print(f'Accuracy with initial_lr={initial_lr}, decay_steps={decay_steps}, decay_rate={decay_rate}: {acc:.4f}')
 
-    cm = confusion_matrix(y_test, y_pred)
+    cm = confusion_matrix(y_test_, y_pred)
     print('Confusion Matrix:\n', cm)
 
     steps_per_epoch = X_train.shape[0] / 16
@@ -175,22 +193,22 @@ def train_model(optimizer_name, initial_lr=0.01, decay_steps=10, decay_rate=0.96
 
 # Initialize an empty list, train models with different configurations and store metrics
 all_metrics = [
-    train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=100, decay_rate=0.96),
-    train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=100, decay_rate=0.9),
-    train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
-    train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=200, decay_rate=0.9),
-    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=50, decay_rate=0.96),
-    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=100, decay_rate=0.96),
-    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
-    train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=200, decay_rate=0.9),
-    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=100, decay_rate=0.95),
-    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=200, decay_rate=0.95),
-    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=300, decay_rate=0.95),
-    train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=50, decay_rate=0.96),
-    train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=50, decay_rate=0.95),
-    train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=100, decay_rate=0.95),
-    train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=300, decay_rate=0.95),
-    train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
+    train_model(optimizer_name='adam', initial_lr=0.00001, decay_steps=100, decay_rate=0.96),
+    # train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=100, decay_rate=0.96),
+    # train_model(optimizer_name='adam', initial_lr=0.0001, decay_steps=200, decay_rate=0.96),
+    # train_model(optimizer_name='adam', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
+    # train_model(optimizer_name='sgd', initial_lr=0.01, decay_steps=50, decay_rate=0.96),
+    # train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=100, decay_rate=0.96),
+    # train_model(optimizer_name='sgd', initial_lr=0.01, decay_steps=200, decay_rate=0.96),
+    # train_model(optimizer_name='sgd', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
+    # train_model(optimizer_name='rmsprop', initial_lr=0.01, decay_steps=100, decay_rate=0.95),
+    # train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=100, decay_rate=0.95),
+    # train_model(optimizer_name='rmsprop', initial_lr=0.01, decay_steps=200, decay_rate=0.95),
+    # train_model(optimizer_name='rmsprop', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
+    # train_model(optimizer_name='adagrad', initial_lr=0.01, decay_steps=100, decay_rate=0.95),
+    # train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=100, decay_rate=0.95),
+    # train_model(optimizer_name='adagrad', initial_lr=0.01, decay_steps=200, decay_rate=0.95),
+    # train_model(optimizer_name='adagrad', initial_lr=0.001, decay_steps=200, decay_rate=0.96),
 ]
 
 # Convert metrics to a DataFrame for tabular display and analysis
