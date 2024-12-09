@@ -115,7 +115,7 @@ like AdaDelta, Adam also keeps an exponentially decaying average of past gradien
 [Deep learning](https://www.functionize.com/blog/neural-network-architectures-and-generative-models-part1)\
 [Activation Functions in Neural Networks](https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6)\
 [How Loss Functions Work in Neural Networks](https://builtin.com/machine-learning/loss-functions)\
-[Multi-layer Perceptron classifier (MLPClassifier)](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)\
-[TensorFlow](https://www.tensorflow.org/api_docs/python/tf)
-[Various Optimization Algorithms For Training Neural Network](https://towardsdatascience.com/optimizers-for-training-neural-network-59450d71caf6)\
-
+[Multi-layer Perceptron Classifier (MLPClassifier)](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html)\
+[TensorFlow Classifier](https://www.tensorflow.org/api_docs/python/tf)\
+[PyTorch Classifier](https://pytorch.org/docs/stable/optim.html#optimizer-step)\
+[Various Optimization Algorithms For Training Neural Network](https://towardsdatascience.com/optimizers-for-training-neural-network-59450d71caf6)
